@@ -18,6 +18,8 @@ const {
   VectorSlice,
   HadamardFold,
   CrossVectorExponent,
+  oneN,
+  VectorDup,
 } = require("../crypto/operations");
 const { G2, Hi, G, H, Gi } = require("../crypto");
 
@@ -303,6 +305,62 @@ class SetMembershipProof {
         .isEqual(mcl.add(this.S3, mcl.mul(this.U.keyImage, x)))
     )
       throw new Error("KeyImageProof failed");
+
+    let n = locked_amount_commitments.length;
+    let yPowers = VectorPowers(y, n);
+
+    let line10LHS = mcl.add(mcl.mul(G(), this.t), mcl.mul(H(), this.taux));
+    let line10RHS = mcl.add(
+      mcl.mul(
+        G(),
+        mcl.sub(
+          mcl.add(
+            mcl.mul(z, z),
+            mcl.mul(
+              mcl.mul(w, mcl.sub(z, mcl.mul(z, z))),
+              InnerProduct(oneN().slice(0, n), yPowers)
+            )
+          ),
+          mcl.mul(
+            mcl.mul(z, mcl.mul(z, z)),
+            InnerProduct(oneN().slice(0, n), oneN().slice(0, n))
+          )
+        )
+      ),
+      mcl.add(mcl.mul(this.T1, x), mcl.mul(this.T2, mcl.mul(x, x)))
+    );
+
+    if (!line10RHS.isEqual(line10LHS)) throw new Error("Line 10 check fails");
+
+    let line11LHS = mcl.add(
+      mcl.mul(G2(), this.mu),
+      mcl.add(
+        InnerProduct(Hi().slice(0, n), this.r),
+        InnerProduct(
+          locked_amount_commitments.map((el) => el.commitment),
+          this.l
+        )
+      )
+    );
+
+    let line11RHS = mcl.add(
+      mcl.add(
+        mcl.add(mcl.add(this.A1, mcl.mul(this.A2, w)), mcl.mul(this.S2, x)),
+        InnerProduct(
+          locked_amount_commitments.map((el) => el.commitment),
+          VectorDup(mcl.neg(z), n)
+        )
+      ),
+      InnerProduct(
+        Hi().slice(0, n),
+        VectorAdd(
+          VectorScalar(VectorPowers(y, n), mcl.mul(w, z)),
+          VectorDup(mcl.mul(z, z), n)
+        )
+      )
+    );
+
+    if (!line11RHS.isEqual(line11LHS)) throw new Error("Line 11 check fails");
   }
 
   CalculateX(transcript, w) {

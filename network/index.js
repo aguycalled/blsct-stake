@@ -18,7 +18,9 @@ class Network {
 
     this.lockedAmountCommitments.push(commitment);
     this.lockedAmountCommitments.sort((a, b) => {
-      return a.serializeToHexStr() < b.serializeToHexStr();
+      return (
+        a.commitment.serializeToHexStr() < b.commitment.serializeToHexStr()
+      );
     });
   }
 
