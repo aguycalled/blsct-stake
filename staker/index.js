@@ -20,6 +20,7 @@ class Staker {
         this.network.lockedAmountCommitments,
         keyBases
       ),
+      keyBases: keyBases,
       height: this.network.height,
       lockedAmountCommitments: this.network.lockedAmountCommitments,
     };

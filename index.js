@@ -19,5 +19,5 @@ Crypto.Init().then(() => {
 
   console.log(proof);
 
-  proof.proof.Verify(network.lockedAmountCommitments);
+  proof.proof.Verify(network.lockedAmountCommitments, proof.keyBases);
 });

@@ -105,37 +105,12 @@ class SetMembershipProof {
         InnerProduct(Hi().slice(0, n), sR)
       )
     );
+    this.S3 = mcl.add(
+      mcl.mul(bases_key_image.G, r_alpha2),
+      mcl.mul(bases_key_image.H, r_sk)
+    );
 
-    let y = new mcl.Fr();
-    let z = new mcl.Fr();
-    let w = new mcl.Fr();
-
-    const transcript = new Transcript();
-
-    for (let ac of locked_amount_commitments) {
-      transcript.add(ac.commitment.serialize());
-    }
-
-    transcript.add(this.A1.serialize());
-    transcript.add(this.A2.serialize());
-    transcript.add(this.S1.serialize());
-    transcript.add(this.S2.serialize());
-
-    y.setBigEndianMod(transcript.getHash());
-
-    if (y.isZero()) throw new Error(`y equals zero`);
-
-    transcript.add(y.serialize());
-
-    z.setBigEndianMod(transcript.getHash());
-
-    if (z.isZero()) throw new Error(`z equals zero`);
-
-    transcript.add(z.serialize());
-
-    w.setBigEndianMod(transcript.getHash());
-
-    if (w.isZero()) throw new Error(`w equals zero`);
+    let { transcript, y, z, w } = this.CalculateYZW(locked_amount_commitments);
 
     let l0 = VectorSubtract(bL, z);
     let l1 = sL.slice();
@@ -164,14 +139,7 @@ class SetMembershipProof {
     this.T1 = mcl.add(mcl.mul(G(), t1), mcl.mul(H(), tau1));
     this.T2 = mcl.add(mcl.mul(G(), t2), mcl.mul(H(), tau2));
 
-    transcript.add(w.serialize());
-    transcript.add(this.T1.serialize());
-    transcript.add(this.T2.serialize());
-
-    let x = new mcl.Fr();
-    x.setBigEndianMod(transcript.getHash());
-
-    if (x.isZero()) throw new Error(`x equals zero`);
+    let x = this.CalculateX(transcript, w);
 
     this.l = VectorAdd(l0, VectorScalar(l1, x));
     this.r = VectorAdd(r0, VectorScalar(r1, x));
@@ -313,6 +281,41 @@ class SetMembershipProof {
     if (!InnerProduct(this.l, this.r).isEqual(this.t))
       throw new Error("InnerProduct failed");
 
+    let { transcript, y, z, w } = this.CalculateYZW(locked_amount_commitments);
+    let x = this.CalculateX(transcript, w);
+
+    if (
+      !mcl
+        .add(
+          mcl.mul(G2(), this.z_alpha1),
+          mcl.add(mcl.mul(G(), this.z_alpha2), mcl.mul(H(), this.z_sk))
+        )
+        .isEqual(mcl.add(this.S1, mcl.mul(this.A1, x)))
+    )
+      throw new Error("SecretKnowledgeProof failed");
+
+    if (
+      !mcl
+        .add(
+          mcl.mul(bases_key_image.G, this.z_alpha2),
+          mcl.mul(bases_key_image.H, this.z_sk)
+        )
+        .isEqual(mcl.add(this.S3, mcl.mul(this.U.keyImage, x)))
+    )
+      throw new Error("KeyImageProof failed");
+  }
+
+  CalculateX(transcript, w) {
+    transcript.add(w.serialize());
+    transcript.add(this.T1.serialize());
+    transcript.add(this.T2.serialize());
+
+    let x = new mcl.Fr();
+    x.setBigEndianMod(transcript.getHash());
+    return x;
+  }
+
+  CalculateYZW(locked_amount_commitments) {
     let y = new mcl.Fr();
     let z = new mcl.Fr();
     let w = new mcl.Fr();
@@ -343,23 +346,7 @@ class SetMembershipProof {
     w.setBigEndianMod(transcript.getHash());
 
     if (w.isZero()) throw new Error(`w equals zero`);
-
-    transcript.add(w.serialize());
-    transcript.add(this.T1.serialize());
-    transcript.add(this.T2.serialize());
-
-    let x = new mcl.Fr();
-    x.setBigEndianMod(transcript.getHash());
-
-    if (
-      mcl
-        .add(
-          mcl.mul(G2(), this.z_alpha1),
-          mcl.add(mcl.mul(G(), this.z_alpha2), mcl.mul(H(), this.z_sk))
-        )
-        .isEqual(mcl.add(this.S1, mcl.mul(this.A1, x)))
-    )
-      throw new Error("SecretKnowledgeProof failed");
+    return { transcript, y, z, w };
   }
 }
 
