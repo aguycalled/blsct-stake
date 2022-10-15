@@ -332,10 +332,22 @@ class SetMembershipProof {
 
     if (!line10RHS.isEqual(line10LHS)) throw new Error("Line 10 check fails");
 
+    let His = Hi().slice(0, n);
+    let HiY = new Array(n);
+
+    let yCache = new mcl.Fr();
+    yCache.setInt(1);
+
+    for (let i = 0; i < n; i++) {
+      if (i == 1) yCache = mcl.inv(y);
+      else if (i > 1) yCache = mcl.mul(yCache, mcl.inv(y));
+      HiY[i] = mcl.mul(His[i], yCache);
+    }
+
     let line11LHS = mcl.add(
       mcl.mul(G2(), this.mu),
       mcl.add(
-        InnerProduct(Hi().slice(0, n), this.r),
+        InnerProduct(HiY, this.r),
         InnerProduct(
           locked_amount_commitments.map((el) => el.commitment),
           this.l
@@ -352,7 +364,7 @@ class SetMembershipProof {
         )
       ),
       InnerProduct(
-        Hi().slice(0, n),
+        HiY,
         VectorAdd(
           VectorScalar(VectorPowers(y, n), mcl.mul(w, z)),
           VectorDup(mcl.mul(z, z), n)

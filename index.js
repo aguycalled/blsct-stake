@@ -16,11 +16,11 @@ Crypto.Init().then(() => {
   let c5 = new AmountCommitment(25);
 
   let network = new Network();
-  //network.LockAmountCommitment(c);
+  network.LockAmountCommitment(c);
   network.LockAmountCommitment(c2);
-  //network.LockAmountCommitment(c3);
-  //network.LockAmountCommitment(c4);
-  //network.LockAmountCommitment(c5);
+  network.LockAmountCommitment(c3);
+  network.LockAmountCommitment(c4);
+  network.LockAmountCommitment(c5);
 
   let staker = new Staker(network);
   let proof = staker.Stake(c2);
